@@ -28,6 +28,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.soundcloud.android.crop.Crop;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -38,10 +40,12 @@ public class PlusActivity extends AppCompatActivity {
     private Uri photoUri;
     private Uri cameraUri;
     private Uri galleryUri;
+    private Uri cropInputUri;
+    private Uri cropOutputUri;
     private String currentPhotoPath;//실제 사진 파일 경로
     String imagePath=null;//갤러리에서 들고오는 사진경로
     String mImageCaptureName;//이미지 이름
-    private final int GALLERY_CODE = 1112;
+    //private final int GALLERY_CODE = 1112;
     private final int CAMERA_CODE = 1111;//'CAMERA_CODE'는 requestCode 선택한 사진에 대한 요청 값을 구분하는 용도
     ImageView ivImage;
 
@@ -54,7 +58,6 @@ public class PlusActivity extends AppCompatActivity {
 
     // MaxNum 구하는 변수
     int maxNum;
-    String stMaxNum;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -112,7 +115,8 @@ public class PlusActivity extends AppCompatActivity {
         DialogInterface.OnClickListener albumListener= new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                selectGallery();
+                //selectGallery();
+                Crop.pickImage(PlusActivity.this);
             }
         };
 
@@ -158,12 +162,15 @@ public class PlusActivity extends AppCompatActivity {
 
             if (intent.resolveActivity(getPackageManager()) != null) {
                 //인텐트를 받을 수 있는 컴포넌트가 존재하는지 확인. 암시적인텐트에서 사용
-                File photoFile = null;
+                /*File photoFile = null;
                 try {
                     photoFile = createImageFile();
                     //사진폴더를 만들고 현재시각으로 이름지어진 파일을 생성하는 사용자 작성함수 createImageFile().
                 } catch (IOException ex) {
-                }
+                }*/
+
+                File photoFile =new File(getCacheDir(), "cropped");
+
                 if (photoFile != null) {
                     photoUri = FileProvider.getUriForFile(this, "com.project.pulp.pulp.fileprovider", photoFile);
                     intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
@@ -174,6 +181,10 @@ public class PlusActivity extends AppCompatActivity {
             Toast.makeText(this, "SD카드가 사용불가능합니다.", Toast.LENGTH_SHORT);
         }
     }
+    //임시파일 저장
+
+
+
 
     //사진 촬영 선택시, 사진이 저장될 폴더와 사진파일 생성.
     private File createImageFile() throws IOException {
@@ -197,56 +208,43 @@ public class PlusActivity extends AppCompatActivity {
         return storageDir;
     }
 
-    private void selectGallery() {
-        Intent intent = new Intent(Intent.ACTION_PICK);
-        intent.setData(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        intent.setType("image/*");
-        startActivityForResult(intent, GALLERY_CODE);
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
-                case GALLERY_CODE:
-                    galleryUri=data.getData();
-                    sendPicture(data.getData()); //갤러리에서 가져오기
-                    break;
                 case CAMERA_CODE:
-                    cameraUri=data.getData();
-                    getPictureForPhoto(data.getData()); //카메라에서 가져오기
+                    try {
+                        File albumFile = null;
+                        albumFile = createImageFile();
+                        cameraUri = data.getData();
+                        Uri destination =Uri.fromFile(albumFile);
+                        Crop.of(cameraUri, destination).asSquare().start(this);
+                    }catch (Exception e){
+                        Log.e("TAKE_ALBUM_SINGLE ERROR", e.toString());
+                    }
+                    //getPictureForPhoto(data.getData()); //카메라에서 가져오기
                     break;
+                case Crop.REQUEST_PICK:
+                    try {
+                        File albumFile = null;
+                        albumFile = createImageFile();
+                        galleryUri = data.getData();
+                        Uri destination =Uri.fromFile(albumFile);
+                        Crop.of(galleryUri, destination).asSquare().start(this);
+                    }catch (Exception e){
+                        Log.e("TAKE_ALBUM_SINGLE ERROR", e.toString());
+                    }
+                case Crop.REQUEST_CROP:
+                    //sendPicture(galleryUri); //갤러리에서 가져오기
+                    ivImage.setImageURI(Crop.getOutput(data));
                 default:
                     break;
             }
         }
     }
-
-    private void sendPicture(Uri imgUri) {
-
-        if (imgUri==null){
-            //imagePath=하나 샘플??;
-            Toast.makeText(this, "사진을 들고올 수 없습니다.",Toast.LENGTH_SHORT).show();
-
-        }else{
-            imagePath = getRealPathFromURI(imgUri); // path 경로
-            ExifInterface exif = null;
-            try {
-                exif = new ExifInterface(imagePath);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            int exifOrientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            int exifDegree = exifOrientationToDegrees(exifOrientation);
-
-            Bitmap bitmap = BitmapFactory.decodeFile(imagePath);//경로를 통해 비트맵으로 전환
-            ivImage.setImageBitmap(rotate(bitmap, exifDegree));//이미지 뷰에 비트맵 넣기
-
-        }
-    }
-
+/*
     private String getRealPathFromURI(Uri contentUri) {
         int column_index=0;
         String[] proj = {MediaStore.Images.Media.DATA};
@@ -256,7 +254,7 @@ public class PlusActivity extends AppCompatActivity {
         }
 
         return cursor.getString(column_index);
-    }
+    }*/
 
 
     private void getPictureForPhoto(Uri imgUri) {
@@ -339,7 +337,7 @@ public class PlusActivity extends AppCompatActivity {
                     //https://stackoverflow.com/questions/27087983/unable-to-add-window-token-null-is-not-valid-is-your-activity-running
 
                     dialog.setTitle("권한이 필요합니다.")
-                            .setMessage("단말기의 파일쓰기 권한이 필요합니다.\\n계속하시겠습니까?")
+                            .setMessage("단말기의 파일쓰기 권한이 필요합니다. \\n 계속하시겠습니까?")
                             .setPositiveButton("확인", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
