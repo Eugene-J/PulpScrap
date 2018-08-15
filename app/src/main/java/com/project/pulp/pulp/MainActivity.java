@@ -17,6 +17,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Layout;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -232,9 +233,12 @@ public class MainActivity extends AppCompatActivity {
                         imageView.setScaleType(ImageView.ScaleType.FIT_XY);
 
                         //폴더 띄우기
+                        final int width = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 195, getResources().getDisplayMetrics());
+                        final int height = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 195, getResources().getDisplayMetrics());
+
                         RelativeLayout relativeLayout = new RelativeLayout(MainActivity.this);
-                        RelativeLayout.LayoutParams param = new RelativeLayout.LayoutParams(510,510);
-                        RelativeLayout.LayoutParams param2 = new RelativeLayout.LayoutParams(510,510);
+                        RelativeLayout.LayoutParams param = new RelativeLayout.LayoutParams(width,height);
+                        RelativeLayout.LayoutParams param2 = new RelativeLayout.LayoutParams(width,height);
                         RelativeLayout.LayoutParams param3 = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
                                 RelativeLayout.LayoutParams.WRAP_CONTENT);
                         param.setMargins(10,10,10,10);
