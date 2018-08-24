@@ -9,10 +9,6 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
-import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -40,8 +36,6 @@ public class PlusActivity extends AppCompatActivity {
     private Uri photoUri;
     private Uri cameraUri;
     private Uri galleryUri;
-    private Uri cropInputUri;
-    private Uri cropOutputUri;
     private String currentPhotoPath;//실제 사진 파일 경로
     String imagePath=null;//갤러리에서 들고오는 사진경로
     String mImageCaptureName;//이미지 이름
@@ -135,20 +129,14 @@ public class PlusActivity extends AppCompatActivity {
     }
 
     /*
-    private void selectPhoto() {
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(intent, CAMERA_CODE);
-    }
+    카메라로 찍은 사진을 가져오는 경우
+    인텐트를 통해 카메라를 호출합니다.
+    'CAMERA_CODE'는 requestCode 선택한 사진에 대한 요청 값을 구분하는 용도입니다.
 
-    7.0 이전 버전은 상위의 코드처럼 간단하게 수행이 가능했지만 보안상의 이슈로
-    'FileProvider.getUriForFile()'을 통해 사진의 uri를 가져오는데
+    7.0 이후 버전은  보안상의 이슈로 'FileProvider.getUriForFile()'을 통해 사진의 uri를 가져오는데
     이를 수행하기 위해선 'AndroidMenifest.xml'에 명시해야합니다.
     추가 정보- http://gogorchg.tistory.com/entry/Android-FileProvider-androidosFileUriExposedException
-     */
-
-    /*  카메라로 찍은 사진을 가져오는 경우
-        인텐트를 통해 카메라를 호출합니다.
-        'CAMERA_CODE'는 requestCode 선택한 사진에 대한 요청 값을 구분하는 용도입니다.*/
+    */
     private void selectPhoto() {
         String state = Environment.getExternalStorageState();
         //외부저장소 sd카드가 이용가능한 상태인지 확인한다
@@ -162,15 +150,12 @@ public class PlusActivity extends AppCompatActivity {
 
             if (intent.resolveActivity(getPackageManager()) != null) {
                 //인텐트를 받을 수 있는 컴포넌트가 존재하는지 확인. 암시적인텐트에서 사용
-                /*File photoFile = null;
+                File photoFile = null;
                 try {
-                    photoFile = createImageFile();
+                    photoFile = createCacheFile();
                     //사진폴더를 만들고 현재시각으로 이름지어진 파일을 생성하는 사용자 작성함수 createImageFile().
                 } catch (IOException ex) {
-                }*/
-
-                File photoFile =new File(getCacheDir(), "cropped");
-
+                }
                 if (photoFile != null) {
                     photoUri = FileProvider.getUriForFile(this, "com.project.pulp.pulp.fileprovider", photoFile);
                     intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
@@ -185,8 +170,38 @@ public class PlusActivity extends AppCompatActivity {
 
 
 
+    private File createCacheFile() throws IOException {
+        //File dir = new File(getApplicationContext().getExternalCacheDir() +""/*"+/Pictures/pulpscrap/"*/);
+        File dir = new File(Environment.getExternalStorageDirectory() + "/Pictures/pulpscrap2/");
+        //디렉토리 생성 /storage/emulated/0 (/sdcard)+ /pulpscrap/
+        //파일생성을 위해서는 new File로 객체 생성후 createNewFile()함수를 실행시켜야 파일로 생성이 된다.
+        //설명 - https://qkrrudtjr954.github.io/java/2017/11/13/create-file-and-file-method.html
+
+        //getExternalCacheDir()/storage/sdcard0/Android/data/package/cache
+        //출처: http://sondroid.tistory.com/entry/Android-내부-저장소-경로 [손드로이드]
+
+        Log.i("ahn", dir+"");
+        if (!dir.exists()) {//File 클래스 함수 exists() - 파일이 존재하는가?
+            dir.mkdirs();//폴더가 존재하지 않으면 폴더 생성
+        }
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        mImageCaptureName = timeStamp + ".png";
+
+        /*File storageDir = new File(Environment.getExternalStorageDirectory().getAbsoluteFile() + "/Pictures/pulpscrap/"
+                + mImageCaptureName);*/
+        File storageDir = new File(Environment.getExternalStorageDirectory().getAbsoluteFile() + "/Pictures/pulpscrap2/"
+                + mImageCaptureName);
+
+        Log.i("ahn", storageDir+"");
+        currentPhotoPath = storageDir.getAbsolutePath();
+        return storageDir;
+    }
+
 
     //사진 촬영 선택시, 사진이 저장될 폴더와 사진파일 생성.
+
+
+    //크롭 사진이 저장될 위치.
     private File createImageFile() throws IOException {
         File dir = new File(Environment.getExternalStorageDirectory() + "/Pictures/pulpscrap/");
         //디렉토리 생성 /storage/emulated/0 (/sdcard)+ /pulpscrap/
@@ -208,6 +223,18 @@ public class PlusActivity extends AppCompatActivity {
         return storageDir;
     }
 
+    //찍은 사진이 핸드폰을 재시작 하기 전까지 갤러리에 보여지지 않을때,
+    //갤러리에 찍은 사진을 로드해주는 기능
+    private void galleryAddPic(){
+        Log.i("galleryAddPic", "Call");
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        // 해당 경로에 있는 파일을 객체화(새로 파일을 만든다는 것으로 이해하면 안 됨)
+        File f = new File(currentPhotoPath);
+        Uri contentUri = Uri.fromFile(f);
+        mediaScanIntent.setData(contentUri);
+        sendBroadcast(mediaScanIntent);
+        //Toast.makeText(this, "사진이 앨범에 저장되었습니다.", Toast.LENGTH_SHORT).show();
+    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -216,15 +243,11 @@ public class PlusActivity extends AppCompatActivity {
             switch (requestCode) {
                 case CAMERA_CODE:
                     try {
-                        File albumFile = null;
-                        albumFile = createImageFile();
-                        cameraUri = data.getData();
-                        Uri destination =Uri.fromFile(albumFile);
-                        Crop.of(cameraUri, destination).asSquare().start(this);
+                        galleryAddPic();
+                        Crop.pickImage(PlusActivity.this);
                     }catch (Exception e){
                         Log.e("TAKE_ALBUM_SINGLE ERROR", e.toString());
                     }
-                    //getPictureForPhoto(data.getData()); //카메라에서 가져오기
                     break;
                 case Crop.REQUEST_PICK:
                     try {
@@ -237,72 +260,14 @@ public class PlusActivity extends AppCompatActivity {
                         Log.e("TAKE_ALBUM_SINGLE ERROR", e.toString());
                     }
                 case Crop.REQUEST_CROP:
-                    //sendPicture(galleryUri); //갤러리에서 가져오기
+                    galleryAddPic();
                     ivImage.setImageURI(Crop.getOutput(data));
                 default:
                     break;
             }
         }
     }
-/*
-    private String getRealPathFromURI(Uri contentUri) {
-        int column_index=0;
-        String[] proj = {MediaStore.Images.Media.DATA};
-        Cursor cursor = getContentResolver().query(contentUri, proj, null, null, null);
-        if(cursor.moveToFirst()){
-            column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-        }
 
-        return cursor.getString(column_index);
-    }*/
-
-
-    private void getPictureForPhoto(Uri imgUri) {
-        Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath);
-
-        ExifInterface exif = null;
-        try {
-            exif = new ExifInterface(currentPhotoPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        int exifOrientation;
-        int exifDegree;
-
-        if (exif != null) {
-            exifOrientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            exifDegree = exifOrientationToDegrees(exifOrientation);
-        } else {
-            exifDegree = 0;
-        }
-
-        ivImage.setImageBitmap(rotate(bitmap, exifDegree));//이미지 뷰에 비트맵 넣기*/
-
-    }
-
-
-    private int exifOrientationToDegrees(int exifOrientation) {
-        if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) {
-            return 90;
-        } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180) {
-            return 180;
-        } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_270) {
-            return 270;
-        }
-        return 0;
-    }
-
-    private Bitmap rotate(Bitmap src, float degree) {
-        // Matrix 객체 생성
-        Matrix matrix = new Matrix();
-        // 회전 각도 셋팅
-        matrix.postRotate(degree);
-        // 이미지와 Matrix 를 셋팅해서 Bitmap 객체 생성
-        return Bitmap.createBitmap(src, 0, 0, src.getWidth(),
-                src.getHeight(), matrix, true);
-    }
-
-    @Override
     public void onPointerCaptureChanged(boolean hasCapture) {
 
     }
@@ -458,17 +423,6 @@ public class PlusActivity extends AppCompatActivity {
             }
             return MaxNum;
 
-            //stMaxNum가 없으면 null이 떠서 에러..
-/*
-            int MaxNum=Integer.parseInt(stMaxNum);
-
-            if (MaxNum==0){
-                MaxNum=1;
-                return MaxNum;
-            } else {
-                MaxNum=+1;
-                return MaxNum;
-            }*/
         }
 
 

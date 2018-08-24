@@ -30,7 +30,7 @@
 
         </activity>
 
-        <activity android:name=".PlusActivity" android:label="상단에 나올글자"/>
+        <activity android:name=".PlusActivity" android:configChanges="orientation|screenSize" />
         <!--모든 액티비티 명시-->
         <provider
             android:authorities="com.project.pulp.pulp.fileprovider"

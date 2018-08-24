@@ -44,6 +44,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.soundcloud.android.crop.Crop;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -145,7 +147,6 @@ public class AlbumActivity extends AppCompatActivity {
 
         btnplus=(ImageView) findViewById(R.id.btnplus);
         btnminus=(ImageView) findViewById(R.id.btnminus);
-        btnlist=(ImageView) findViewById(R.id.btnlist);
 
         btnplus.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -330,14 +331,13 @@ public class AlbumActivity extends AppCompatActivity {
                          @Override
                          public void onClick(DialogInterface dialog, int which) {
                              selectPhoto();
-
                          }
                      });
 
                      builder.setNeutralButton("앨범선택", new DialogInterface.OnClickListener() {
                          @Override
                          public void onClick(DialogInterface dialog, int which) {
-                             selectGallery();
+                             Crop.pickImage(AlbumActivity.this);
                          }
                      });
 
@@ -532,7 +532,7 @@ public class AlbumActivity extends AppCompatActivity {
     public void albumUpdate(){
         int position = pager.getCurrentItem();
 
-        if (currentPhotoPath == null) {
+        if (imagePath != null) {
             if (orderCheck) {
                 sqliteDatabase.execSQL("UPDATE scrap SET photo='" + imagePath + "' WHERE num=(select max(num) from scrap where subject=" +
                         folderNum + ")-" + position + " and subject=" + folderNum + ";");
@@ -561,6 +561,7 @@ public class AlbumActivity extends AppCompatActivity {
 
 
     // PlusActivity 객체 생성 여부 미정이라서 거기 있는 갤러리 관련 메소드를 전부 가져왔음
+
     private void selectPhoto() {
         String state = Environment.getExternalStorageState();
         //외부저장소 sd카드가 이용가능한 상태인지 확인한다
@@ -576,7 +577,7 @@ public class AlbumActivity extends AppCompatActivity {
                 //인텐트를 받을 수 있는 컴포넌트가 존재하는지 확인. 암시적인텐트에서 사용
                 File photoFile = null;
                 try {
-                    photoFile = createImageFile();
+                    photoFile = createCacheFile();
                     //사진폴더를 만들고 현재시각으로 이름지어진 파일을 생성하는 사용자 작성함수 createImageFile().
                 } catch (IOException ex) {
                 }
@@ -590,8 +591,42 @@ public class AlbumActivity extends AppCompatActivity {
             Toast.makeText(this, "SD카드가 사용불가능합니다.", Toast.LENGTH_SHORT);
         }
     }
+    //임시파일 저장
+
+
+
+    private File createCacheFile() throws IOException {
+        //File dir = new File(getApplicationContext().getExternalCacheDir() +""/*"+/Pictures/pulpscrap/"*/);
+        File dir = new File(Environment.getExternalStorageDirectory() + "/Pictures/pulpscrap2/");
+        //디렉토리 생성 /storage/emulated/0 (/sdcard)+ /pulpscrap/
+        //파일생성을 위해서는 new File로 객체 생성후 createNewFile()함수를 실행시켜야 파일로 생성이 된다.
+        //설명 - https://qkrrudtjr954.github.io/java/2017/11/13/create-file-and-file-method.html
+
+        //getExternalCacheDir()/storage/sdcard0/Android/data/package/cache
+        //출처: http://sondroid.tistory.com/entry/Android-내부-저장소-경로 [손드로이드]
+
+        Log.i("ahn", dir+"");
+        if (!dir.exists()) {//File 클래스 함수 exists() - 파일이 존재하는가?
+            dir.mkdirs();//폴더가 존재하지 않으면 폴더 생성
+        }
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        mImageCaptureName = timeStamp + ".png";
+
+        /*File storageDir = new File(Environment.getExternalStorageDirectory().getAbsoluteFile() + "/Pictures/pulpscrap/"
+                + mImageCaptureName);*/
+        File storageDir = new File(Environment.getExternalStorageDirectory().getAbsoluteFile() + "/Pictures/pulpscrap2/"
+                + mImageCaptureName);
+
+        Log.i("ahn", storageDir+"");
+        currentPhotoPath = storageDir.getAbsolutePath();
+        return storageDir;
+    }
+
 
     //사진 촬영 선택시, 사진이 저장될 폴더와 사진파일 생성.
+
+
+    //크롭 사진이 저장될 위치.
     private File createImageFile() throws IOException {
         File dir = new File(Environment.getExternalStorageDirectory() + "/Pictures/pulpscrap/");
         //디렉토리 생성 /storage/emulated/0 (/sdcard)+ /pulpscrap/
@@ -613,52 +648,65 @@ public class AlbumActivity extends AppCompatActivity {
         return storageDir;
     }
 
-    private void selectGallery() {
-        Intent intent = new Intent(Intent.ACTION_PICK);
-        intent.setData(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        intent.setType("image/*");
-        startActivityForResult(intent, GALLERY_CODE);
+    //찍은 사진이 핸드폰을 재시작 하기 전까지 갤러리에 보여지지 않을때,
+    //갤러리에 찍은 사진을 로드해주는 기능
+    private void galleryAddPic(){
+        Log.i("galleryAddPic", "Call");
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        // 해당 경로에 있는 파일을 객체화(새로 파일을 만든다는 것으로 이해하면 안 됨)
+        File f = new File(currentPhotoPath);
+        Uri contentUri = Uri.fromFile(f);
+        mediaScanIntent.setData(contentUri);
+        sendBroadcast(mediaScanIntent);
+        //Toast.makeText(this, "사진이 앨범에 저장되었습니다.", Toast.LENGTH_SHORT).show();
     }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
-                case GALLERY_CODE:
-                    galleryUri=data.getData();
-                    sendPicture(data.getData()); //갤러리에서 가져오기
-                    break;
                 case CAMERA_CODE:
-                    cameraUri=data.getData();
-                    getPictureForPhoto(data.getData()); //카메라에서 가져오기
+                    try {
+                        galleryAddPic();
+                        Crop.pickImage(AlbumActivity.this);
+                    }catch (Exception e){
+                        Log.e("TAKE_ALBUM_SINGLE ERROR", e.toString());
+                    }
                     break;
+                case Crop.REQUEST_PICK:
+                    try {
+                        File albumFile = null;
+                        albumFile = createImageFile();
+                        galleryUri = data.getData();
+                        Uri destination =Uri.fromFile(albumFile);
+                        Crop.of(galleryUri, destination).asSquare().start(this);
+                    }catch (Exception e){
+                        Log.e("TAKE_ALBUM_SINGLE ERROR", e.toString());
+                    }
+                case Crop.REQUEST_CROP:
+                    galleryAddPic();
+                    img.setImageURI(Crop.getOutput(data));
+                    sendPicture(data.getData());
+
                 default:
                     break;
             }
         }
     }
 
-    private void sendPicture(Uri imgUri) {
 
+    private void sendPicture(Uri imgUri) {
         if (imgUri==null){
             //imagePath=하나 샘플??;
-            Toast.makeText(this, "사진을 들고올 수 없습니다.",Toast.LENGTH_SHORT).show();
-
+            //Toast.makeText(this, "사진을 들고올 수 없습니다.",Toast.LENGTH_SHORT).show();
         }else{
             imagePath = getRealPathFromURI(imgUri); // path 경로
-
             albumUpdate();
-
-
-            Toast.makeText(AlbumActivity.this.getApplicationContext(),
-                    "스크랩 내용을 수정하였습니다!",Toast.LENGTH_SHORT).show();
 
             int position = pager.getCurrentItem();
             pager.setAdapter(adapter);
             pager.setCurrentItem(position); // this is suppose to be your pagePosition
-
 
         }
     }
@@ -674,51 +722,6 @@ public class AlbumActivity extends AppCompatActivity {
         return cursor.getString(column_index);
     }
 
-
-    private void getPictureForPhoto(Uri imgUri) {
-        Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath);
-
-        ExifInterface exif = null;
-        try {
-            exif = new ExifInterface(currentPhotoPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        int exifOrientation;
-        int exifDegree;
-
-        if (exif != null) {
-            exifOrientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            exifDegree = exifOrientationToDegrees(exifOrientation);
-        } else {
-            exifDegree = 0;
-        }
-
-        img.setImageBitmap(rotate(bitmap, exifDegree));//이미지 뷰에 비트맵 넣기*/
-
-    }
-
-
-    private int exifOrientationToDegrees(int exifOrientation) {
-        if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) {
-            return 90;
-        } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180) {
-            return 180;
-        } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_270) {
-            return 270;
-        }
-        return 0;
-    }
-
-    private Bitmap rotate(Bitmap src, float degree) {
-        // Matrix 객체 생성
-        Matrix matrix = new Matrix();
-        // 회전 각도 셋팅
-        matrix.postRotate(degree);
-        // 이미지와 Matrix 를 셋팅해서 Bitmap 객체 생성
-        return Bitmap.createBitmap(src, 0, 0, src.getWidth(),
-                src.getHeight(), matrix, true);
-    }
 
     @Override
     public void onPointerCaptureChanged(boolean hasCapture) {
