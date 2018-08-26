@@ -279,9 +279,10 @@ public class MainActivity extends AppCompatActivity {
         public void run(){
             sqLiteDatabase = myDBHelper.getReadableDatabase();
             Cursor cursor;
-            cursor = sqLiteDatabase.rawQuery("select subject from folder order by num desc",null);
+            cursor = sqLiteDatabase.rawQuery("select subject,num from folder order by num desc",null);
             while (cursor.moveToNext()){
                 String folderName = cursor.getString(0);
+                int floderNum2 = cursor.getInt(1);
                 TextView txt = new TextView(MainActivity.this);
                 txt.setText("  " + folderName);
                 txt.setTextSize(30);
@@ -292,11 +293,13 @@ public class MainActivity extends AppCompatActivity {
                         LinearLayout.LayoutParams.MATCH_PARENT);
                 params.setMargins(10,10,10,50);
                 txt.setLayoutParams(params);
-                layout.addView(txt);
 
-                layout.setOnClickListener(
+                txt.setTag(floderNum2);
+                txt.setOnClickListener(
                         new pageNumClick()
                 );
+                layout.addView(txt);
+
             }
             cursor.close();
             sqLiteDatabase.close();

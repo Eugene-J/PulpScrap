@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -29,7 +30,7 @@
 
         </activity>
 
-        <activity android:name=".PlusActivity" android:label="상단에 나올글자"/>
+        <activity android:name=".PlusActivity" android:configChanges="orientation|screenSize" />
         <!--모든 액티비티 명시-->
         <provider
             android:authorities="com.project.pulp.pulp.fileprovider"
@@ -42,7 +43,7 @@
         </provider>
         <!--프로바이더 작성. authorities에 패키지명을 적어준다.
         res폴더 하위에 xml폴더를 생성하고 file_path파일을 생성해 권한을 주고자 하는 폴더를 지정한다  -->
-
+        <activity android:name="com.soundcloud.android.crop.CropImageActivity" />
     </application>
 
 </manifest>
