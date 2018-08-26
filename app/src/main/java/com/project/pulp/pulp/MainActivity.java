@@ -16,6 +16,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Layout;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -23,6 +24,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Gallery;
@@ -233,8 +235,11 @@ public class MainActivity extends AppCompatActivity {
                         imageView.setScaleType(ImageView.ScaleType.FIT_XY);
 
                         //폴더 띄우기
-                        final int width = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 195, getResources().getDisplayMetrics());
-                        final int height = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 195, getResources().getDisplayMetrics());
+                        DisplayMetrics metrics = new DisplayMetrics();
+                        WindowManager windowManager = (WindowManager)getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
+                        windowManager.getDefaultDisplay().getMetrics(metrics);
+                        final int width = (metrics.widthPixels-55)/2;
+                        final int height = width;
 
                         RelativeLayout relativeLayout = new RelativeLayout(MainActivity.this);
                         RelativeLayout.LayoutParams param = new RelativeLayout.LayoutParams(width,height);
