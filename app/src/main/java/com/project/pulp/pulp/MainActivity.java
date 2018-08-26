@@ -248,7 +248,7 @@ public class MainActivity extends AppCompatActivity {
                                 RelativeLayout.LayoutParams.WRAP_CONTENT);
                         param.setMargins(10,10,10,10);
                         param3.addRule(RelativeLayout.CENTER_IN_PARENT);
-                        param2.setMargins(0,0,0,0);
+                        param2.setMargins(10,10,10,10);
                         relativeLayout.setLayoutParams(param);
                         imageView.setLayoutParams(param2);
                         txt.setLayoutParams(param3);
