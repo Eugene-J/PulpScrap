@@ -63,6 +63,7 @@ public class AlbumActivity extends AppCompatActivity {
     private final int CAMERA_CODE = 1111;//'CAMERA_CODE'는 requestCode 선택한 사진에 대한 요청 값을 구분하는 용도
 
 
+
     // activity_swipe.xml 뷰 페이지 변수 선언
     ViewPager pager;
     CustomAdapter adapter;
@@ -197,6 +198,8 @@ public class AlbumActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        ((MainActivity)(MainActivity.mContext)).recreate();
 
         sqliteDatabase = dbHelper.getReadableDatabase();
         Cursor cursor;
