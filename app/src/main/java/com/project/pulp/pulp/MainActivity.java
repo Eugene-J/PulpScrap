@@ -46,6 +46,10 @@ public class MainActivity extends AppCompatActivity {
     int mode = 1;
     int floderNum;
     String folderName;
+    String imagePath=null;//갤러리에서 들고오는 사진경로
+
+    public static Context mContext;
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -89,6 +93,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mContext = this;
 
         myDBHelper = new myDBHelper(this);
         //레이아웃
@@ -169,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
         public void onCreate(SQLiteDatabase sqLiteDatabase) {
             sqLiteDatabase.execSQL("create table IF NOT EXISTS folder(num INTEGER PRIMARY KEY AUTOINCREMENT,subject char(10));");
             sqLiteDatabase.execSQL("create table IF NOT EXISTS scrap " +
-                    "(subject INTEGER, num INTEGER, photo char(500), memo char(100));");
+                    "(subject INTEGER references folder(num), num INTEGER, photo char(500), memo char(100));");
         }
 
         @Override
@@ -188,6 +194,17 @@ public class MainActivity extends AppCompatActivity {
             }
             int viewNum = Integer.parseInt(count);
             return viewNum;
+        }
+
+        public int maxNum (){
+            sqLiteDatabase = getReadableDatabase();
+            Cursor cursor;
+            cursor = sqLiteDatabase.rawQuery("select max(num) from folder", null);
+            int maxNum=0;
+            while(cursor.moveToNext()){
+                maxNum = cursor.getInt(0);
+            }
+            return maxNum;
         }
 
     }//end class
@@ -209,15 +226,19 @@ public class MainActivity extends AppCompatActivity {
                 layoutCount = (countNum % layoutSize) != 0 ? layoutCount + 1 : layoutCount;
                 Log.v("lay", ""+layoutCount);
                 for (int i = 0; i < layoutCount; i++) {
+
                     LinearLayout linearLayout = new LinearLayout(MainActivity.this); //폴더를 담는 리니어레이아웃
-                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT
+                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT
                             ,LinearLayout.LayoutParams.WRAP_CONTENT);
                     layoutParams.setMargins(10,10,10,10);
+                    linearLayout.setGravity(Gravity.CENTER_HORIZONTAL);
                     linearLayout.setLayoutParams(layoutParams);
                     int currentLayout = i + 1;
                     int startRow = (currentLayout-1)*layoutSize+1-1;//startRow-1해서 대입
                     cursor = sqLiteDatabase.rawQuery("select subject, num from folder order by num desc LIMIT "+startRow+","+layoutSize,null);
+
                     while (cursor.moveToNext()){
+
                         //폴더명 띄우기
                         folderName = cursor.getString(0);
                         floderNum = cursor.getInt(1);
@@ -228,11 +249,6 @@ public class MainActivity extends AppCompatActivity {
 
                         //폴더 이미지 넣기
                         ImageView imageView = new ImageView(MainActivity.this);
-                        Drawable image = getResources().getDrawable(R.drawable.pic2);
-                        image.setAlpha(100);
-                        imageView.setImageDrawable(image);
-                        imageView.setBackgroundResource(R.drawable.image_border);
-                        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
 
                         //폴더 띄우기
                         DisplayMetrics metrics = new DisplayMetrics();
@@ -269,13 +285,10 @@ public class MainActivity extends AppCompatActivity {
                             Bitmap bitmap = BitmapFactory.decodeFile(imagePath);//경로를 통해 비트맵으로 전환
                             imageView.setImageBitmap(bitmap);
                         }
-                        //relativeLayout.setGravity(Gravity.CENTER);
 
                         relativeLayout.addView(imageView);
                         relativeLayout.addView(txt);
-                        relativeLayout.setTag(floderNum);
                         linearLayout.addView(relativeLayout);
-
 
                         relativeLayout.setOnClickListener(
                                 new pageNumClick()
@@ -318,10 +331,9 @@ public class MainActivity extends AppCompatActivity {
                 layout.addView(txt);
 
             }
-            cursor.close();
-            sqLiteDatabase.close();
         }
     }//end class
+
 
 
 
@@ -333,6 +345,20 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("folderNum", (Integer)v.getTag());
             startActivity(intent);
         }
+    }
+
+
+    public String folderImg(RelativeLayout r){
+        String imagePath=null;
+        MainActivity m = new MainActivity();
+        int folderNum = (Integer)r.getTag();
+
+        Cursor cursor = sqLiteDatabase.rawQuery("select photo from scrap where num=(select max(num) from scrap where subject="+folderNum+") and subject="+folderNum, null);
+        while(cursor.moveToNext()){
+            imagePath=cursor.getString(0);
+        }
+
+        return imagePath;
     }
 
 }
