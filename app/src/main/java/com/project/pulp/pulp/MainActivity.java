@@ -210,10 +210,9 @@ public class MainActivity extends AppCompatActivity {
                 Log.v("lay", ""+layoutCount);
                 for (int i = 0; i < layoutCount; i++) {
                     LinearLayout linearLayout = new LinearLayout(MainActivity.this); //폴더를 담는 리니어레이아웃
-                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT
+                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT
                             ,LinearLayout.LayoutParams.WRAP_CONTENT);
                     layoutParams.setMargins(10,10,10,10);
-                    linearLayout.setGravity(Gravity.CENTER);
                     linearLayout.setLayoutParams(layoutParams);
                     int currentLayout = i + 1;
                     int startRow = (currentLayout-1)*layoutSize+1-1;//startRow-1해서 대입
@@ -253,6 +252,23 @@ public class MainActivity extends AppCompatActivity {
                         relativeLayout.setLayoutParams(param);
                         imageView.setLayoutParams(param2);
                         txt.setLayoutParams(param3);
+                        relativeLayout.setGravity(Gravity.CENTER);
+                        relativeLayout.setTag(floderNum);
+
+                        imagePath = folderImg(relativeLayout);
+
+                        if (imagePath==null) {
+
+                            Drawable image = getResources().getDrawable(R.drawable.pic2);
+                            image.setAlpha(100);
+                            imageView.setImageDrawable(image);
+                            imageView.setBackgroundResource(R.drawable.image_border);
+                            imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+
+                        } else {
+                            Bitmap bitmap = BitmapFactory.decodeFile(imagePath);//경로를 통해 비트맵으로 전환
+                            imageView.setImageBitmap(bitmap);
+                        }
                         //relativeLayout.setGravity(Gravity.CENTER);
 
                         relativeLayout.addView(imageView);
