@@ -210,9 +210,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.v("lay", ""+layoutCount);
                 for (int i = 0; i < layoutCount; i++) {
                     LinearLayout linearLayout = new LinearLayout(MainActivity.this); //폴더를 담는 리니어레이아웃
-                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT
+                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT
                             ,LinearLayout.LayoutParams.WRAP_CONTENT);
                     layoutParams.setMargins(10,10,10,10);
+                    linearLayout.setGravity(Gravity.CENTER);
                     linearLayout.setLayoutParams(layoutParams);
                     int currentLayout = i + 1;
                     int startRow = (currentLayout-1)*layoutSize+1-1;//startRow-1해서 대입
@@ -252,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
                         relativeLayout.setLayoutParams(param);
                         imageView.setLayoutParams(param2);
                         txt.setLayoutParams(param3);
-                        relativeLayout.setGravity(Gravity.CENTER);
+                        //relativeLayout.setGravity(Gravity.CENTER);
 
                         relativeLayout.addView(imageView);
                         relativeLayout.addView(txt);
