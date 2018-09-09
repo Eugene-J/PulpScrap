@@ -228,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
                 for (int i = 0; i < layoutCount; i++) {
 
                     LinearLayout linearLayout = new LinearLayout(MainActivity.this); //폴더를 담는 리니어레이아웃
-                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT
+                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT
                             ,LinearLayout.LayoutParams.WRAP_CONTENT);
                     layoutParams.setMargins(10,10,10,10);
                     linearLayout.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -254,7 +254,8 @@ public class MainActivity extends AppCompatActivity {
                         DisplayMetrics metrics = new DisplayMetrics();
                         WindowManager windowManager = (WindowManager)getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
                         windowManager.getDefaultDisplay().getMetrics(metrics);
-                        final int width = (metrics.widthPixels-55)/2;
+                        final int margin = metrics.widthPixels/20;
+                        final int width = (metrics.widthPixels-margin)/2;
                         final int height = width;
 
                         RelativeLayout relativeLayout = new RelativeLayout(MainActivity.this);
@@ -262,9 +263,9 @@ public class MainActivity extends AppCompatActivity {
                         RelativeLayout.LayoutParams param2 = new RelativeLayout.LayoutParams(width,height);
                         RelativeLayout.LayoutParams param3 = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
                                 RelativeLayout.LayoutParams.WRAP_CONTENT);
-                        param.setMargins(10,10,10,10);
+                        param.setMargins(margin/4,margin/4,margin/4,margin/4);
                         param3.addRule(RelativeLayout.CENTER_IN_PARENT);
-                        param2.setMargins(10,10,10,10);
+                        param2.setMargins(margin/4,margin/4,margin/4,margin/4);
                         relativeLayout.setLayoutParams(param);
                         imageView.setLayoutParams(param2);
                         txt.setLayoutParams(param3);
